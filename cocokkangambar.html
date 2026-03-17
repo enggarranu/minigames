@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Game Anak: Cocokkan Gambar!</title>
+    <style>
+        /* Desain dan Layout */
+        * {
+            box-sizing: border-box;
+            touch-action: manipulation; /* Mencegah zoom saat di-tap cepat */
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            background-color: #E0F7FA; /* Biru muda yang cerah dan lembut */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #FF5722;
+            text-align: center;
+        }
+
+        /* Grid untuk kartu */
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 3 kolom agar pas di layar HP */
+            gap: 10px;
+            width: 90vw;
+            max-width: 400px;
+        }
+
+        /* Desain Kartu */
+        .card {
+            background-color: #FFF;
+            border-radius: 15px;
+            aspect-ratio: 1 / 1; /* Membuat kartu berbentuk kotak sempurna */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px; /* Ukuran gambar/emoji besar */
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s, background-color 0.2s;
+            border: 3px solid #4CAF50;
+        }
+
+        .card.hidden {
+            background-color: #FFEB3B; /* Warna kuning saat tertutup */
+            color: transparent; /* Menyembunyikan emoji */
+            border-color: #FFC107;
+        }
+
+        .card.matched {
+            background-color: #C8E6C9; /* Warna hijau saat cocok */
+            border-color: #4CAF50;
+            transform: scale(0.95); /* Efek mengecil sedikit */
+            pointer-events: none; /* Tidak bisa diklik lagi */
+        }
+
+        /* Tombol Ulangi */
+        .btn-restart {
+            margin-top: 20px;
+            padding: 12px 24px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            background-color: #2196F3;
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            cursor: pointer;
+        }
+
+        .btn-restart:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Cocokkan Gambar! 🌟</h1>
+    <div class="game-board" id="gameBoard"></div>
+    <button class="btn-restart" onclick="startGame()">Main Lagi 🔄</button>
+
+    <script>
+        // Kumpulan gambar/angka menggunakan Emoji
+        const items = ['🍎', '🐶', '🚗', '1️⃣', '🎈', '🐱'];
+        let cards = [];
+        let firstCard = null;
+        let secondCard = null;
+        let lockBoard = false;
+        let matchedPairs = 0;
+
+        const gameBoard = document.getElementById('gameBoard');
+
+        function startGame() {
+            gameBoard.innerHTML = '';
+            matchedPairs = 0;
+            firstCard = null;
+            secondCard = null;
+            lockBoard = false;
+
+            // Gandakan item untuk membuat pasangan, lalu acak
+            cards = [...items, ...items];
+            cards.sort(() => 0.5 - Math.random());
+
+            // Buat elemen kartu di HTML
+            cards.forEach((item, index) => {
+                const cardElement = document.createElement('div');
+                cardElement.classList.add('card', 'hidden');
+                cardElement.dataset.value = item;
+                cardElement.innerText = item;
+                
+                // Tambahkan event ketika kartu disentuh/diklik
+                cardElement.addEventListener('click', () => flipCard(cardElement));
+                gameBoard.appendChild(cardElement);
+            });
+        }
+
+        function flipCard(card) {
+            // Cegah klik jika papan sedang dikunci atau kartu yang sama diklik 2x
+            if (lockBoard || card === firstCard || card.classList.contains('matched')) return;
+
+            // Buka kartu
+            card.classList.remove('hidden');
+
+            if (!firstCard) {
+                firstCard = card;
+                return;
+            }
+
+            secondCard = card;
+            checkForMatch();
+        }
+
+        function checkForMatch() {
+            let isMatch = firstCard.dataset.value === secondCard.dataset.value;
+
+            if (isMatch) {
+                disableCards();
+                matchedPairs++;
+                // Jika semua pasangan ditemukan
+                if (matchedPairs === items.length) {
+                    setTimeout(() => alert('Horeee! Kamu Pintar! 🎉'), 500);
+                }
+            } else {
+                unflipCards();
+            }
+        }
+
+        function disableCards() {
+            firstCard.classList.add('matched');
+            secondCard.classList.add('matched');
+            resetBoard();
+        }
+
+        function unflipCards() {
+            lockBoard = true; // Kunci papan agar tidak bisa klik kartu lain
+            setTimeout(() => {
+                firstCard.classList.add('hidden');
+                secondCard.classList.add('hidden');
+                resetBoard();
+            }, 1000); // Waktu anak melihat kartu sebelum ditutup lagi (1 detik)
+        }
+
+        function resetBoard() {
+            firstCard = null;
+            secondCard = null;
+            lockBoard = false;
+        }
+
+        // Mulai game saat halaman pertama kali dibuka
+        startGame();
+    </script>
+
+</body>
+</html>
