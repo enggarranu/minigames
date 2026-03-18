@@ -70,6 +70,7 @@
         /* Warna border untuk masing-masing game */
         .card-match { border-color: #4CAF50; }
         .card-balloon { border-color: #2196F3; }
+        .card-piano { border-color: #E91E63; }
 
         /* Efek saat kartu ditekan */
         .game-card:active {
@@ -118,6 +119,7 @@
         /* Animasi masuk untuk kartu secara bergantian */
         .card-1 { animation: slideUp 0.6s ease-out 0.2s backwards; }
         .card-2 { animation: slideUp 0.6s ease-out 0.4s backwards; }
+        .card-3 { animation: slideUp 0.6s ease-out 0.6s backwards; }
 
         @keyframes slideUp {
             0% { transform: translateY(50px); opacity: 0; }
@@ -256,6 +258,14 @@
             <div class="game-info">
                 <div class="game-title">Pecahkan Balon</div>
                 <div class="game-desc">Tangkap balon warna-warni yang terbang. Awas terlewat!</div>
+            </div>
+        </a>
+
+        <a href="piano.html" class="game-card card-piano card-3">
+            <div class="game-icon">🎹</div>
+            <div class="game-info">
+                <div class="game-title">Piano Ajaib</div>
+                <div class="game-desc">Tekan warna-warninya dan dengarkan nada musik yang ceria!</div>
             </div>
         </a>
 

@@ -124,6 +124,8 @@
         <button class="btn-mode active" id="btnEmoji" onclick="setMode('emoji')">🐶 Emoji</button>
         <button class="btn-mode" id="btnHuruf" onclick="setMode('huruf')">🅰️ Huruf</button>
         <button class="btn-mode" id="btnAngka" onclick="setMode('angka')">🔢 Angka</button>
+        <button class="btn-mode" id="btnMobil" onclick="setMode('mobil')">🚗 Mobil</button>
+
     </div>
 
     <div class="game-board" id="gameBoard"></div>
@@ -134,6 +136,7 @@
         const dataEmoji = ['🍎', '🐶', '🚗', '🎈', '🐱', '⭐'];
         const dataHuruf = ['A', 'B', 'C', 'D', 'E', 'F'];
         const dataAngka = ['1', '2', '3', '4', '5', '6'];
+        const dataMobil = ['🚗', '🚕', '🚙', '🚌', '🚎', '🏎️'];
 
         let currentMode = 'emoji'; // Default mode
         let currentItems = dataEmoji;
@@ -166,16 +169,25 @@
                 document.getElementById('btnEmoji').classList.add('active');
                 document.getElementById('btnHuruf').classList.remove('active');
                 document.getElementById('btnAngka').classList.remove('active');
+                document.getElementById('btnMobil').classList.remove('active');
             } else if (mode === 'huruf') {
                 currentItems = dataHuruf;
                 document.getElementById('btnHuruf').classList.add('active');
                 document.getElementById('btnEmoji').classList.remove('active');
                 document.getElementById('btnAngka').classList.remove('active');
-            } else {
+                document.getElementById('btnMobil').classList.remove('active');
+            } else if (mode === 'angka') {
                 currentItems = dataAngka;
                 document.getElementById('btnAngka').classList.add('active');
                 document.getElementById('btnHuruf').classList.remove('active');
                 document.getElementById('btnEmoji').classList.remove('active');
+                document.getElementById('btnMobil').classList.remove('active');
+            } else if (mode === 'mobil') {
+                currentItems = dataMobil;
+                document.getElementById('btnMobil').classList.add('active');
+                document.getElementById('btnEmoji').classList.remove('active');
+                document.getElementById('btnHuruf').classList.remove('active');
+                document.getElementById('btnAngka').classList.remove('active');
             }
             startGame(); // Langsung mulai ulang dengan mode baru
         }
