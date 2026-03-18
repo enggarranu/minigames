@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Menu Utama - Dunia Bermain!</title>
+    <style>
+        /* Desain Dasar */
+        * {
+            box-sizing: border-box;
+            touch-action: manipulation; /* Mencegah zoom di HP */
+            margin: 0;
+            padding: 0;
+            text-decoration: none; /* Menghilangkan garis bawah pada link */
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            background-color: #FFF9C4; /* Kuning pastel yang ceria */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* Header / Judul Aplikasi */
+        .header {
+            margin-top: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+            animation: bounceIn 1s ease-out;
+        }
+
+        h1 {
+            font-size: 32px;
+            color: #FF5252;
+            text-shadow: 2px 2px 0px #FFF, 4px 4px 0px #FFCDD2;
+            margin-bottom: 5px;
+        }
+
+        p.subtitle {
+            font-size: 18px;
+            color: #FF9800;
+            font-weight: bold;
+        }
+
+        /* Wadah Menu Game */
+        .menu-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px; /* Jarak antar tombol game */
+            width: 100%;
+            max-width: 400px; /* Maksimal lebar untuk tampilan HP */
+        }
+
+        /* Desain Kartu / Tombol Game */
+        .game-card {
+            display: flex;
+            align-items: center;
+            background-color: white;
+            border-radius: 25px;
+            padding: 20px;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+            border: 4px solid;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+
+        /* Warna border untuk masing-masing game */
+        .card-match { border-color: #4CAF50; }
+        .card-balloon { border-color: #2196F3; }
+
+        /* Efek saat kartu ditekan */
+        .game-card:active {
+            transform: translateY(5px) scale(0.98);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        /* Ikon Game di dalam Kartu */
+        .game-icon {
+            font-size: 50px;
+            margin-right: 20px;
+            background-color: #F5F5F5;
+            min-width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 20px;
+        }
+
+        /* Teks di dalam Kartu */
+        .game-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .game-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .game-desc {
+            font-size: 14px;
+            color: #777;
+        }
+
+        /* Animasi Muncul */
+        @keyframes bounceIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            60% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+
+        /* Animasi masuk untuk kartu secara bergantian */
+        .card-1 { animation: slideUp 0.6s ease-out 0.2s backwards; }
+        .card-2 { animation: slideUp 0.6s ease-out 0.4s backwards; }
+
+        @keyframes slideUp {
+            0% { transform: translateY(50px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Dunia Bermain 🏰</h1>
+        <p class="subtitle">Pilih permainan serumu!</p>
+    </div>
+
+    <div class="menu-container">
+        
+        <a href="cocokkangamabar.html" class="game-card card-match card-1">
+            <div class="game-icon">🐶</div>
+            <div class="game-info">
+                <div class="game-title">Cocokkan!</div>
+                <div class="game-desc">Cari gambar dan huruf yang sama. Melatih ingatan!</div>
+            </div>
+        </a>
+
+        <a href="balon.html" class="game-card card-balloon card-2">
+            <div class="game-icon">🎈</div>
+            <div class="game-info">
+                <div class="game-title">Pecahkan Balon</div>
+                <div class="game-desc">Tangkap balon warna-warni yang terbang. Awas terlewat!</div>
+            </div>
+        </a>
+
+        </div>
+
+</body>
+</html>

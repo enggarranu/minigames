@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Game Anak: Cocokkan Gambar & Huruf!</title>
+    <style>
+        /* Desain dan Layout */
+        * {
+            box-sizing: border-box;
+            touch-action: manipulation;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            background-color: #E0F7FA;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        h1 {
+            font-size: 22px;
+            margin-bottom: 15px;
+            color: #FF5722;
+            text-align: center;
+        }
+
+        /* Menu Pilihan Mode */
+        .menu-mode {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn-mode {
+            padding: 10px 15px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 15px;
+            border: 2px solid #FF9800;
+            background-color: white;
+            color: #FF9800;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-mode.active {
+            background-color: #FF9800;
+            color: white;
+        }
+
+        /* Grid untuk kartu */
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            width: 90vw;
+            max-width: 400px;
+        }
+
+        /* Desain Kartu */
+        .card {
+            background-color: #FFF;
+            border-radius: 15px;
+            aspect-ratio: 1 / 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s, background-color 0.2s;
+            border: 3px solid #4CAF50;
+        }
+
+        .card.hidden {
+            background-color: #FFEB3B;
+            color: transparent;
+            border-color: #FFC107;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="%23FF9800"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 50%;
+        }
+
+        .card.matched {
+            background-color: #C8E6C9;
+            border-color: #4CAF50;
+            transform: scale(0.95);
+            pointer-events: none;
+        }
+
+        /* Tombol Ulangi */
+        .btn-restart {
+            margin-top: 20px;
+            padding: 12px 24px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            background-color: #2196F3;
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            cursor: pointer;
+        }
+
+        .btn-restart:active {
+            transform: translateY(2px);
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" style="position:absolute; top:10px; left:10px; font-size:30px; text-decoration:none; z-index:100;">🏠</a>
+    <h1>Ayo Bermain! 🌟</h1>
+    
+    <div class="menu-mode">
+        <button class="btn-mode active" id="btnEmoji" onclick="setMode('emoji')">🐶 Emoji</button>
+        <button class="btn-mode" id="btnHuruf" onclick="setMode('huruf')">🅰️ Huruf</button>
+        <button class="btn-mode" id="btnAngka" onclick="setMode('angka')">🔢 Angka</button>
+    </div>
+
+    <div class="game-board" id="gameBoard"></div>
+    <button class="btn-restart" onclick="startGame()">Main Lagi 🔄</button>
+
+    <script>
+        // Data untuk masing-masing mode
+        const dataEmoji = ['🍎', '🐶', '🚗', '🎈', '🐱', '⭐'];
+        const dataHuruf = ['A', 'B', 'C', 'D', 'E', 'F'];
+        const dataAngka = ['1', '2', '3', '4', '5', '6'];
+
+        let currentMode = 'emoji'; // Default mode
+        let currentItems = dataEmoji;
+        
+        let cards = [];
+        let firstCard = null;
+        let secondCard = null;
+        let lockBoard = false;
+        let matchedPairs = 0;
+
+        const gameBoard = document.getElementById('gameBoard');
+
+        // Inisialisasi Efek Suara (Pastikan file mp3 ada di folder yang sama)
+        const soundFlip = new Audio('flip.mp3');
+        const soundBenar = new Audio('benar.mp3');
+        const soundMenang = new Audio('menang.mp3');
+
+        // Fungsi untuk memainkan suara (dengan try-catch agar tidak error jika file tidak ada)
+        function playSound(audioElement) {
+            try {
+                audioElement.currentTime = 0; // Ulangi dari awal jika diputar cepat
+                audioElement.play().catch(e => console.log("Menunggu file audio: " + e));
+            } catch(e) {}
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            if (mode === 'emoji') {
+                currentItems = dataEmoji;
+                document.getElementById('btnEmoji').classList.add('active');
+                document.getElementById('btnHuruf').classList.remove('active');
+                document.getElementById('btnAngka').classList.remove('active');
+            } else if (mode === 'huruf') {
+                currentItems = dataHuruf;
+                document.getElementById('btnHuruf').classList.add('active');
+                document.getElementById('btnEmoji').classList.remove('active');
+                document.getElementById('btnAngka').classList.remove('active');
+            } else {
+                currentItems = dataAngka;
+                document.getElementById('btnAngka').classList.add('active');
+                document.getElementById('btnHuruf').classList.remove('active');
+                document.getElementById('btnEmoji').classList.remove('active');
+            }
+            startGame(); // Langsung mulai ulang dengan mode baru
+        }
+
+        function startGame() {
+            gameBoard.innerHTML = '';
+            matchedPairs = 0;
+            firstCard = null;
+            secondCard = null;
+            lockBoard = false;
+
+            // Gandakan item dan acak
+            cards = [...currentItems, ...currentItems];
+            cards.sort(() => 0.5 - Math.random());
+
+            // Buat kartu
+            cards.forEach((item) => {
+                const cardElement = document.createElement('div');
+                cardElement.classList.add('card', 'hidden');
+                cardElement.dataset.value = item;
+                cardElement.innerText = item;
+                
+                cardElement.addEventListener('click', () => flipCard(cardElement));
+                gameBoard.appendChild(cardElement);
+            });
+        }
+
+        function flipCard(card) {
+            if (lockBoard || card === firstCard || card.classList.contains('matched')) return;
+
+            playSound(soundFlip); // Bunyikan suara flip
+            card.classList.remove('hidden');
+
+            if (!firstCard) {
+                firstCard = card;
+                return;
+            }
+
+            secondCard = card;
+            checkForMatch();
+        }
+
+        function checkForMatch() {
+            let isMatch = firstCard.dataset.value === secondCard.dataset.value;
+
+            if (isMatch) {
+                playSound(soundBenar); // Bunyikan suara benar
+                disableCards();
+                matchedPairs++;
+                
+                if (matchedPairs === currentItems.length) {
+                    setTimeout(() => {
+                        playSound(soundMenang); // Bunyikan suara menang
+                        alert('Horeee! Kamu Pintar! 🎉');
+                    }, 500);
+                }
+            } else {
+                unflipCards();
+            }
+        }
+
+        function disableCards() {
+            firstCard.classList.add('matched');
+            secondCard.classList.add('matched');
+            resetBoard();
+        }
+
+        function unflipCards() {
+            lockBoard = true;
+            setTimeout(() => {
+                firstCard.classList.add('hidden');
+                secondCard.classList.add('hidden');
+                resetBoard();
+            }, 1000);
+        }
+
+        function resetBoard() {
+            firstCard = null;
+            secondCard = null;
+            lockBoard = false;
+        }
+
+        // Mulai game
+        startGame();
+    </script>
+</body>
+</html>
