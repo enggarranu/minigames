@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Game Anak: Papan Gambar Ajaib!</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            touch-action: none; /* SANGAT PENTING: Mencegah layar ikut tergeser saat anak menggambar */
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            background-color: #E8F5E9; /* Hijau pastel yang menenangkan mata */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Tombol Kembali ke Beranda */
+        .btn-home {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            font-size: 30px;
+            text-decoration: none;
+            background: white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            z-index: 20;
+        }
+
+        h1 {
+            font-size: 22px;
+            color: #4CAF50;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 0px #FFF;
+        }
+
+        /* Area Kanvas Menggambar */
+        .canvas-container {
+            flex-grow: 1;
+            width: 90%;
+            max-width: 500px;
+            background-color: white;
+            border-radius: 20px;
+            border: 4px solid #FFC107;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+
+        /* Menu Pilihan Warna di Bawah */
+        .tools-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: white;
+            border-radius: 30px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            align-items: center;
+        }
+
+        .color-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .color-btn.active {
+            transform: scale(1.2);
+            border: 3px solid #333;
+        }
+
+        /* Tombol Hapus (Clear) */
+        .btn-clear {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #FF5252;
+            color: white;
+            font-size: 24px;
+            border: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .btn-clear:active {
+            transform: translateY(2px);
+        }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="btn-home">🏠</a>
+
+    <h1>Ayo Menggambar! 🎨</h1>
+
+    <div class="canvas-container">
+        <canvas id="drawingCanvas"></canvas>
+    </div>
+
+    <div class="tools-container">
+        <div class="color-btn active" style="background-color: #000000;" onclick="changeColor(this, '#000000')"></div>
+        <div class="color-btn" style="background-color: #FF5252;" onclick="changeColor(this, '#FF5252')"></div>
+        <div class="color-btn" style="background-color: #4CAF50;" onclick="changeColor(this, '#4CAF50')"></div>
+        <div class="color-btn" style="background-color: #2196F3;" onclick="changeColor(this, '#2196F3')"></div>
+        <div class="color-btn" style="background-color: #FFEB3B;" onclick="changeColor(this, '#FFEB3B')"></div>
+        
+        <button class="btn-clear" onclick="clearCanvas()">🗑️</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        
+        let isDrawing = false;
+        let currentColor = '#000000';
+        let currentLineWidth = 8; // Ukuran spidol agak tebal agar pas untuk anak-anak
+
+        // Menyesuaikan ukuran kanvas dengan wadahnya yang responsif
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            
+            // Pengaturan gaya coretan (biar ujungnya bulat tidak kotak)
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+        }
+
+        // Jalankan saat pertama kali dibuka
+        window.onload = resizeCanvas;
+        // Jalankan lagi jika layar HP di-rotate
+        window.onresize = resizeCanvas;
+
+        function startDrawing(e) {
+            isDrawing = true;
+            draw(e);
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+            ctx.beginPath(); // Memutus garis agar saat digambar lagi tidak tersambung dari titik terakhir
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+
+            // Mencegah *scroll* layar (terutama di HP)
+            e.preventDefault();
+
+            // Mendapatkan posisi sentuhan jari (Touch) atau Mouse
+            let clientX, clientY;
+            if (e.type.includes('touch')) {
+                // Untuk layar sentuh (HP/Tablet)
+                const rect = canvas.getBoundingClientRect();
+                clientX = e.touches[0].clientX - rect.left;
+                clientY = e.touches[0].clientY - rect.top;
+            } else {
+                // Untuk Mouse (Laptop/PC)
+                clientX = e.offsetX;
+                clientY = e.offsetY;
+            }
+
+            ctx.lineWidth = currentLineWidth;
+            ctx.strokeStyle = currentColor;
+
+            ctx.lineTo(clientX, clientY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(clientX, clientY);
+        }
+
+        // Event Listener untuk Layar Sentuh (HP)
+        canvas.addEventListener('touchstart', startDrawing);
+        canvas.addEventListener('touchmove', draw);
+        canvas.addEventListener('touchend', stopDrawing);
+        canvas.addEventListener('touchcancel', stopDrawing);
+
+        // Event Listener untuk Mouse (Biar bisa ditest di PC juga)
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        // Fungsi mengganti warna
+        function changeColor(element, color) {
+            currentColor = color;
+            
+            // Hilangkan efek aktif di tombol warna lain
+            document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('active'));
+            // Tambahkan efek aktif di warna yang dipilih
+            element.classList.add('active');
+            
+            // Atur ulang garis agar bersih untuk tarikan garis baru
+            ctx.beginPath(); 
+        }
+
+        // Fungsi membersihkan kanvas
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    </script>
+</body>
+</html>
