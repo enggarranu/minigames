@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Game Anak: Puzzle Mobil!</title>
+    <title>Game Anak: Puzzle Bayangan!</title>
     <style>
         * {
             box-sizing: border-box;
-            touch-action: none; /* Mencegah layar tergeser di HP */
+            touch-action: none; 
             margin: 0;
             padding: 0;
-            user-select: none; /* Mencegah blok teks biru di PC */
+            user-select: none; 
         }
 
         body {
@@ -45,51 +45,79 @@
         h1 {
             font-size: 24px;
             color: #FF9800;
-            margin-top: 20px;
-            margin-bottom: 20px;
+            margin-top: 15px;
+            margin-bottom: 10px;
             text-shadow: 1px 1px 0px #FFF;
             z-index: 10;
         }
 
-        /* Area Jalan Raya (Tempat Bayangan) */
+        /* Menu Pilihan Mode */
+        .mode-menu {
+            display: flex;
+            flex-wrap: wrap; /* Agar tombol muat di layar HP kecil */
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            z-index: 10;
+            max-width: 95%;
+        }
+
+        .btn-mode {
+            padding: 8px 12px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 20px;
+            border: 3px solid #2196F3;
+            background-color: white;
+            color: #2196F3;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-mode.active {
+            background-color: #2196F3;
+            color: white;
+        }
+
         .road-container {
             background-color: #757575; 
-            width: 90%;
-            max-width: 400px;
+            width: 95%; 
+            max-width: 450px; 
             border-radius: 20px;
-            padding: 20px;
+            padding: 15px;
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 15px; 
             border: 4px dashed #FFEB3B; 
-            margin-bottom: 40px;
+            margin-bottom: 25px;
         }
 
         .shadow-box {
-            height: 80px;
+            height: 70px; 
             background-color: rgba(0, 0, 0, 0.2);
             border-radius: 15px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 50px;
-            filter: brightness(0) opacity(0.5); /* Trik bayangan hitam */
+            font-size: 40px; 
+            font-weight: bold;
+            filter: brightness(0) opacity(0.5); 
         }
 
-        /* Area Mobil */
         .cars-container {
-            width: 90%;
-            max-width: 400px;
+            width: 95%;
+            max-width: 450px;
             display: flex;
-            justify-content: space-around;
+            justify-content: center; 
             flex-wrap: wrap;
             gap: 15px;
         }
 
         .car {
-            font-size: 50px;
-            width: 70px;
-            height: 70px;
+            font-size: 40px; 
+            font-weight: bold;
+            width: 60px; 
+            height: 60px; 
             display: flex;
             justify-content: center;
             align-items: center;
@@ -140,7 +168,14 @@
 
     <a href="index.html" class="btn-home">🏠</a>
 
-    <h1>Pasangkan Mobilnya! 🚓</h1>
+    <h1>Puzzle Bayangan! 🧩</h1>
+
+    <div class="mode-menu">
+        <button class="btn-mode active" id="btnMobil" onclick="setMode('mobil')">🚓 Mobil</button>
+        <button class="btn-mode" id="btnAngka" onclick="setMode('angka')">1️⃣ Angka</button>
+        <button class="btn-mode" id="btnHuruf" onclick="setMode('huruf')">🅰️ Huruf Besar</button>
+        <button class="btn-mode" id="btnHurufKecil" onclick="setMode('huruf_kecil')">ⓐ Huruf Kecil</button>
+    </div>
 
     <div class="road-container" id="shadows"></div>
     <div class="cars-container" id="cars"></div>
@@ -151,18 +186,34 @@
     </div>
 
     <script>
-        const vehicles = [
-            { id: 'v1', emoji: '🚓' }, 
-            { id: 'v2', emoji: '🚑' }, 
-            { id: 'v3', emoji: '🚒' }, 
-            { id: 'v4', emoji: '🚕' }  
-        ];
+        // Data Induk dengan tambahan Huruf Kecil
+        const datasets = {
+            mobil: ['🚓', '🚑', '🚒', '🚕', '🚜', '🚌', '🛵', '🚲', '🚁', '✈️'], 
+            angka: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
+            huruf: ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'],
+            huruf_kecil: ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
+        };
 
+        const textColors = ['#FF5252', '#FF9800', '#4CAF50', '#2196F3', '#9C27B0', '#E91E63'];
+
+        let currentMode = 'mobil';
         let matchedCount = 0;
         let audioCtx;
 
         function initAudio() {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        // Fitur Suara Manusia (Text-to-Speech)
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'id-ID'; 
+                utterance.rate = 1.0;     
+                utterance.pitch = 1.2;    
+                window.speechSynthesis.speak(utterance);
+            }
         }
 
         function playSound(type) {
@@ -176,7 +227,7 @@
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(400, audioCtx.currentTime);
                 osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1);
-                gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime); 
                 gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
                 osc.start(); osc.stop(audioCtx.currentTime + 0.1);
             } else if (type === 'wrong') {
@@ -188,6 +239,15 @@
             }
         }
 
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('btnMobil').classList.toggle('active', mode === 'mobil');
+            document.getElementById('btnAngka').classList.toggle('active', mode === 'angka');
+            document.getElementById('btnHuruf').classList.toggle('active', mode === 'huruf');
+            document.getElementById('btnHurufKecil').classList.toggle('active', mode === 'huruf_kecil');
+            startGame();
+        }
+
         function startGame() {
             matchedCount = 0;
             document.getElementById('winScreen').style.display = 'none';
@@ -197,28 +257,36 @@
             shadowContainer.innerHTML = '';
             carContainer.innerHTML = '';
 
-            const shuffledShadows = [...vehicles].sort(() => Math.random() - 0.5);
-            const shuffledCars = [...vehicles].sort(() => Math.random() - 0.5);
+            let pool = datasets[currentMode];
+            let selectedItems = [...pool].sort(() => Math.random() - 0.5).slice(0, 6);
+            let currentVehicles = selectedItems.map((val, idx) => ({ id: 'item' + idx, text: val }));
+
+            const shuffledShadows = [...currentVehicles].sort(() => Math.random() - 0.5);
+            const shuffledCars = [...currentVehicles].sort(() => Math.random() - 0.5);
 
             shuffledShadows.forEach(v => {
                 const shadow = document.createElement('div');
                 shadow.classList.add('shadow-box');
                 shadow.dataset.id = v.id;
-                shadow.innerText = v.emoji;
+                shadow.innerText = v.text;
                 shadowContainer.appendChild(shadow);
             });
 
-            shuffledCars.forEach(v => {
+            shuffledCars.forEach((v, index) => {
                 const car = document.createElement('div');
                 car.classList.add('car');
                 car.dataset.id = v.id;
-                car.innerText = v.emoji;
+                car.innerText = v.text;
+                
+                if (currentMode !== 'mobil') {
+                    car.style.color = textColors[index % textColors.length];
+                }
+
                 setupDrag(car); 
                 carContainer.appendChild(car);
             });
         }
 
-        // --- FUNGSI DRAG (MENDUKUNG MOUSE PC & TOUCH HP) ---
         function setupDrag(el) {
             let startX = 0, startY = 0, currentX = 0, currentY = 0;
             let isDragging = false;
@@ -227,7 +295,6 @@
                 isDragging = true;
                 initAudio();
                 
-                // Cek apakah klik berasal dari Mouse (PC) atau Jari (HP)
                 const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
                 const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
 
@@ -235,12 +302,12 @@
                 startY = clientY - currentY;
                 
                 el.style.zIndex = "100";
-                el.style.transition = "none"; // Matikan animasi agar mengikuti kursor dengan pas
+                el.style.transition = "none"; 
             }
 
             function drag(e) {
                 if (!isDragging) return;
-                e.preventDefault(); // Mencegah layar PC blok teks atau layar HP scroll
+                e.preventDefault(); 
                 
                 const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
                 const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
@@ -256,12 +323,11 @@
                 isDragging = false;
                 
                 el.style.zIndex = "15";
-                el.style.transition = "transform 0.3s ease"; // Nyalakan lagi animasinya
+                el.style.transition = "transform 0.3s ease"; 
 
                 checkMatch(el);
             }
 
-            // Fungsi Logika Benar/Salah dipindah ke dalam sini agar bisa mereset posisi dengan mudah
             function checkMatch(car) {
                 const carId = car.dataset.id;
                 const targetShadow = document.querySelector(`.shadow-box[data-id='${carId}']`);
@@ -269,7 +335,6 @@
                 const carRect = car.getBoundingClientRect();
                 const shadowRect = targetShadow.getBoundingClientRect();
 
-                // Cek apakah mobil ditaruh di atas bayangan
                 const isOverlapping = !(
                     carRect.right < shadowRect.left || 
                     carRect.left > shadowRect.right || 
@@ -280,24 +345,25 @@
                 if (isOverlapping) {
                     playSound('match');
                     
-                    // Tempelkan mobil ke tengah bayangan
+                    speakText(car.innerText);
+                    
                     car.style.transform = "translate(0px, 0px)";
                     car.style.position = "absolute";
                     car.style.left = `${shadowRect.left + (shadowRect.width - carRect.width)/2}px`;
                     car.style.top = `${shadowRect.top + (shadowRect.height - carRect.height)/2}px`;
                     
-                    car.style.pointerEvents = "none"; // Kunci mobil
+                    car.style.pointerEvents = "none"; 
                     car.style.boxShadow = "none";
                     car.style.backgroundColor = "transparent";
                     
                     matchedCount++;
-                    if (matchedCount === vehicles.length) {
+                    if (matchedCount === 6) {
                         setTimeout(() => {
+                            speakText("Hore! Kamu pintar sekali!"); 
                             document.getElementById('winScreen').style.display = 'flex';
-                        }, 500);
+                        }, 1000); 
                     }
                 } else {
-                    // Salah! Kembalikan ke tempat asal (Reset nilai X dan Y)
                     playSound('wrong');
                     currentX = 0;
                     currentY = 0;
@@ -305,14 +371,12 @@
                 }
             }
 
-            // Event Listener untuk HP (Layar Sentuh)
             el.addEventListener('touchstart', dragStart, {passive: false});
             window.addEventListener('touchmove', drag, {passive: false});
             window.addEventListener('touchend', dragEnd);
 
-            // Event Listener untuk Laptop/PC (Mouse)
             el.addEventListener('mousedown', dragStart);
-            window.addEventListener('mousemove', drag); // Dipasang di window agar kursor tidak lepas saat ditarik cepat
+            window.addEventListener('mousemove', drag); 
             window.addEventListener('mouseup', dragEnd);
         }
 

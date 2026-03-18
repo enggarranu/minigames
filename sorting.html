@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Game Anak: Kereta Urutan!</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            touch-action: none; 
+            margin: 0;
+            padding: 0;
+            user-select: none; 
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            background-color: #E8F5E9; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .btn-home {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            font-size: 30px;
+            text-decoration: none;
+            background: white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            z-index: 20;
+        }
+
+        h1 {
+            font-size: 26px;
+            color: #E91E63;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            text-shadow: 1px 1px 0px #FFF;
+        }
+
+        /* Tampilan Level */
+        .level-text {
+            font-size: 18px;
+            color: #FF9800;
+            font-weight: bold;
+            background-color: white;
+            padding: 5px 15px;
+            border-radius: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 10px;
+        }
+
+        .mode-menu {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .btn-mode {
+            padding: 8px 15px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 20px;
+            border: 3px solid #2196F3;
+            background-color: white;
+            color: #2196F3;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-mode.active {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        /* Area Kereta */
+        .train-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            background-color: #8D6E63; 
+            padding: 15px 10px;
+            border-radius: 15px;
+            width: 98%;
+            max-width: 600px;
+            margin-bottom: 20px;
+            border-bottom: 6px solid #5D4037;
+            overflow-x: auto; 
+        }
+
+        .train-head {
+            font-size: 40px;
+            margin-right: 2px;
+            transform: scaleX(-1); 
+        }
+
+        #slotsContainer {
+            display: flex; 
+            gap: 5px;
+            flex-wrap: wrap; 
+            justify-content: center;
+        }
+
+        .slot {
+            width: 40px; 
+            height: 45px;
+            background-color: rgba(255, 255, 255, 0.3);
+            border: 3px dashed #FFF;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px; 
+            color: white;
+            font-weight: bold;
+            position: relative;
+        }
+
+        /* Area Balok */
+        .blocks-container {
+            width: 95%;
+            max-width: 450px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            background-color: rgba(255,255,255,0.5);
+            padding: 15px;
+            border-radius: 20px;
+        }
+
+        .block {
+            width: 45px; 
+            height: 45px; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px; 
+            font-weight: bold;
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            cursor: grab;
+            position: relative;
+            z-index: 15;
+            transition: transform 0.1s;
+        }
+
+        .block:active { cursor: grabbing; }
+
+        /* Warna Balok Warni-Warni */
+        .c1 { background-color: #FF5252; }
+        .c2 { background-color: #FF9800; }
+        .c3 { background-color: #4CAF50; }
+        .c4 { background-color: #2196F3; }
+        .c5 { background-color: #9C27B0; }
+        .c6 { background-color: #FFEB3B; color: #333; } 
+        .c7 { background-color: #00BCD4; } 
+        .c8 { background-color: #E91E63; } 
+        .c9 { background-color: #8D6E63; } 
+        .c10 { background-color: #3F51B5; } 
+
+        .win-screen {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(255, 255, 255, 0.9);
+            z-index: 50;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .win-screen h2 {
+            font-size: 32px;
+            color: #4CAF50;
+            margin-bottom: 20px;
+            text-align: center;
+            padding: 0 20px;
+        }
+
+        .btn-restart {
+            padding: 15px 30px;
+            font-size: 20px;
+            background-color: #FF9800;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="btn-home">🏠</a>
+
+    <h1>Kereta Urutan! 🚂</h1>
+    
+    <div class="level-text" id="levelDisplay">Level 1</div>
+
+    <div class="mode-menu">
+        <button class="btn-mode active" id="btnAngka" onclick="setMode('angka')">1️⃣ Angka</button>
+        <button class="btn-mode" id="btnHuruf" onclick="setMode('huruf')">🅰️ Huruf</button>
+    </div>
+
+    <div class="train-container">
+        <div class="train-head">🚂</div>
+        <div id="slotsContainer"></div>
+    </div>
+
+    <div class="blocks-container" id="blocksContainer"></div>
+
+    <div class="win-screen" id="winScreen">
+        <h2>Pintar Sekali! Tut tuuut! 🚂💨</h2>
+        <button class="btn-restart" onclick="nextLevel()">Level Selanjutnya 🚀</button>
+    </div>
+
+    <script>
+        const colors = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c10'];
+        
+        let currentMode = 'angka';
+        let levelAngka = 1; // Menyimpan progres level angka
+        let levelHuruf = 1; // Menyimpan progres level huruf
+        
+        let matchedCount = 0;
+        let audioCtx;
+        let currentData = []; 
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function playSound(type) {
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'match') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(500, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1000, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+            } else if (type === 'win') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(300, audioCtx.currentTime + 0.3);
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime + 0.4);
+                gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.5, audioCtx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0, audioCtx.currentTime + 0.35);
+                gain.gain.setValueAtTime(0.5, audioCtx.currentTime + 0.4);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.8);
+            }
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('btnAngka').classList.toggle('active', mode === 'angka');
+            document.getElementById('btnHuruf').classList.toggle('active', mode === 'huruf');
+            renderGame();
+        }
+
+        // --- SISTEM PEMBUAT SOAL BERDASARKAN LEVEL ---
+        function generateDataByLevel() {
+            let currentLevel = (currentMode === 'angka') ? levelAngka : levelHuruf;
+            
+            // Jumlah gerbong dimulai dari 5, bertambah 1 setiap 2 level, maksimal 10 gerbong
+            let length = Math.min(10, 4 + Math.ceil(currentLevel / 2)); 
+            let tempSet = new Set(); 
+            
+            if (currentMode === 'angka') {
+                // Rentang angka maksimal bertambah 10 setiap level (Maksimal 100)
+                let maxNum = Math.min(100, currentLevel * 10); 
+                if (maxNum < length) maxNum = length; // Jaga-jaga agar rentang tidak lebih kecil dari jumlah kotak
+
+                while(tempSet.size < length) {
+                    tempSet.add(Math.floor(Math.random() * maxNum) + 1); // Acak dari 1 sampai maxNum
+                }
+                currentData = Array.from(tempSet).sort((a, b) => a - b).map(String);
+            } else {
+                // Rentang huruf bertambah 2 huruf setiap level (Maksimal sampai Z)
+                let maxRange = Math.min(26, 4 + currentLevel * 2); 
+                if (maxRange < length) maxRange = length;
+
+                while(tempSet.size < length) {
+                    let charCode = Math.floor(Math.random() * maxRange) + 65; // 65 adalah A
+                    tempSet.add(String.fromCharCode(charCode));
+                }
+                currentData = Array.from(tempSet).sort();
+            }
+        }
+
+        function nextLevel() {
+            if (currentMode === 'angka') {
+                levelAngka++;
+            } else {
+                levelHuruf++;
+            }
+            renderGame();
+        }
+
+        function renderGame() {
+            matchedCount = 0;
+            document.getElementById('winScreen').style.display = 'none';
+            
+            // Update Teks Level di Layar
+            let displayLevel = (currentMode === 'angka') ? levelAngka : levelHuruf;
+            document.getElementById('levelDisplay').innerText = `Level ${displayLevel}`;
+
+            const slotsContainer = document.getElementById('slotsContainer');
+            const blocksContainer = document.getElementById('blocksContainer');
+            slotsContainer.innerHTML = '';
+            blocksContainer.innerHTML = '';
+
+            // Panggil mesin pembuat soal berdasarkan level
+            generateDataByLevel();
+            
+            // 1. Buat Gerbong Kosong
+            currentData.forEach((val) => {
+                const slot = document.createElement('div');
+                slot.classList.add('slot');
+                slot.dataset.val = val;
+                slot.innerText = val; // Petunjuk tipis di dalam gerbong
+                slotsContainer.appendChild(slot);
+            });
+
+            // 2. Buat Balok dan Acak Urutannya
+            const blockObjects = currentData.map((val, index) => ({ val, color: colors[index] }));
+            const shuffledBlocks = blockObjects.sort(() => Math.random() - 0.5);
+
+            shuffledBlocks.forEach(obj => {
+                const block = document.createElement('div');
+                block.classList.add('block', obj.color);
+                block.dataset.val = obj.val;
+                block.innerText = obj.val;
+                setupDrag(block);
+                blocksContainer.appendChild(block);
+            });
+        }
+
+        function setupDrag(el) {
+            let startX = 0, startY = 0, currentX = 0, currentY = 0;
+            let isDragging = false;
+
+            function dragStart(e) {
+                isDragging = true;
+                initAudio();
+                const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+                startX = clientX - currentX;
+                startY = clientY - currentY;
+                el.style.zIndex = "100";
+                el.style.transition = "none"; 
+            }
+
+            function drag(e) {
+                if (!isDragging) return;
+                e.preventDefault(); 
+                const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+                currentX = clientX - startX;
+                currentY = clientY - startY;
+                el.style.transform = `translate(${currentX}px, ${currentY}px) scale(1.1)`;
+            }
+
+            function dragEnd(e) {
+                if (!isDragging) return;
+                isDragging = false;
+                el.style.zIndex = "15";
+                el.style.transition = "transform 0.3s ease"; 
+                checkMatch(el);
+            }
+
+            function checkMatch(block) {
+                const blockVal = block.dataset.val;
+                const targetSlot = document.querySelector(`.slot[data-val='${blockVal}']`);
+                
+                const blockRect = block.getBoundingClientRect();
+                const slotRect = targetSlot.getBoundingClientRect();
+
+                const isOverlapping = !(
+                    blockRect.right < slotRect.left || 
+                    blockRect.left > slotRect.right || 
+                    blockRect.bottom < slotRect.top || 
+                    blockRect.top > slotRect.bottom
+                );
+
+                if (isOverlapping) {
+                    playSound('match');
+                    block.style.transform = "translate(0px, 0px)";
+                    block.style.position = "absolute";
+                    
+                    block.style.left = `${slotRect.left + (slotRect.width - blockRect.width)/2}px`;
+                    block.style.top = `${slotRect.top + (slotRect.height - blockRect.height)/2}px`;
+                    
+                    block.style.pointerEvents = "none"; 
+                    block.style.boxShadow = "none";
+                    targetSlot.innerText = "";
+
+                    matchedCount++;
+                    if (matchedCount === currentData.length) { 
+                        setTimeout(() => {
+                            playSound('win');
+                            document.getElementById('winScreen').style.display = 'flex';
+                        }, 500);
+                    }
+                } else {
+                    playSound('wrong');
+                    currentX = 0;
+                    currentY = 0;
+                    block.style.transform = `translate(0px, 0px) scale(1)`;
+                }
+            }
+
+            el.addEventListener('touchstart', dragStart, {passive: false});
+            window.addEventListener('touchmove', drag, {passive: false});
+            window.addEventListener('touchend', dragEnd);
+
+            el.addEventListener('mousedown', dragStart);
+            window.addEventListener('mousemove', drag); 
+            window.addEventListener('mouseup', dragEnd);
+        }
+
+        // Mulai game pada Level 1
+        renderGame();
+    </script>
+</body>
+</html>

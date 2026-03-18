@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Game Anak: Urai Tali Kusut!</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            touch-action: none; /* Mencegah layar scroll saat menarik tali */
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            background-color: #E1BEE7; /* Ungu pastel ceria */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .btn-home {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            font-size: 30px;
+            text-decoration: none;
+            background: white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            z-index: 20;
+        }
+
+        h1 {
+            font-size: 24px;
+            color: #9C27B0;
+            margin-top: 20px;
+            text-shadow: 1px 1px 0px #FFF;
+            z-index: 10;
+        }
+
+        .subtitle {
+            color: #4A148C;
+            font-size: 14px;
+            margin-bottom: 10px;
+            z-index: 10;
+            font-weight: bold;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            flex-grow: 1;
+        }
+
+        /* Layar Kemenangan */
+        .win-screen {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(255, 255, 255, 0.9);
+            z-index: 50;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .win-screen h2 {
+            font-size: 36px;
+            color: #4CAF50;
+            margin-bottom: 20px;
+        }
+
+        .btn-restart {
+            padding: 15px 30px;
+            font-size: 20px;
+            background-color: #FF9800;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="btn-home">🏠</a>
+
+    <h1>Pindah Talinya! 🧶</h1>
+    <p class="subtitle">Tarik ujung tali ke paku yang kosong</p>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div class="win-screen" id="winScreen">
+        <h2>Pintar Sekali! 🎉</h2>
+        <button class="btn-restart" onclick="startLevel()">Level Selanjutnya 🔄</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        // Penyesuaian layar otomatis
+        function resize() {
+            width = canvas.clientWidth;
+            height = canvas.clientHeight;
+            canvas.width = width;
+            canvas.height = height;
+            initPegs();
+            draw();
+        }
+        window.addEventListener('resize', resize);
+
+        // Pengaturan Game
+        const columns = 4; // Jumlah paku per baris
+        const numRopes = 3; // Jumlah tali (artinya ada 1 paku kosong)
+        const pegRadius = 25;
+        const colors = ['#FF5252', '#4CAF50', '#2196F3', '#FFEB3B'];
+        
+        let topPegs = [];
+        let bottomPegs = [];
+        let ropes = [];
+        
+        let draggingRope = null; // Tali yang sedang ditarik
+        let dragEnd = null; // 'top' atau 'bottom'
+        let dragPos = { x: 0, y: 0 };
+        let isWin = false;
+
+        // Audio System
+        let audioCtx;
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function playSound(type) {
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'pickup') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'drop') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(500, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'win') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+            }
+        }
+
+        // Posisi Paku di Layar
+        function initPegs() {
+            topPegs = [];
+            bottomPegs = [];
+            const spacing = width / (columns + 1);
+            
+            for (let i = 0; i < columns; i++) {
+                topPegs.push({ id: `t${i}`, x: spacing * (i + 1), y: 120, ropeId: null });
+                bottomPegs.push({ id: `b${i}`, x: spacing * (i + 1), y: height - 150, ropeId: null });
+            }
+        }
+
+        // Memulai Level Baru dengan posisi acak yang dijamin bisa diselesaikan
+        function startLevel() {
+            document.getElementById('winScreen').style.display = 'none';
+            isWin = false;
+            ropes = [];
+            initPegs();
+
+            // 1. Buat tali lurus (solusi menang)
+            for (let i = 0; i < numRopes; i++) {
+                ropes.push({
+                    id: i,
+                    color: colors[i % colors.length],
+                    topPeg: i,
+                    bottomPeg: i
+                });
+                topPegs[i].ropeId = i;
+                bottomPegs[i].ropeId = i;
+            }
+
+            // 2. Acak posisinya (Scrambler) dengan memindah-mindahkan ujung tali ke paku kosong
+            for(let j=0; j < 10; j++) {
+                // Acak atas
+                let emptyTop = topPegs.findIndex(p => p.ropeId === null);
+                let randomTop = Math.floor(Math.random() * numRopes);
+                let ropeToMoveTop = ropes[randomTop];
+                topPegs[ropeToMoveTop.topPeg].ropeId = null; // Kosongkan paku lama
+                ropeToMoveTop.topPeg = emptyTop; // Pindah ke paku baru
+                topPegs[emptyTop].ropeId = ropeToMoveTop.id; // Isi paku baru
+
+                // Acak bawah
+                let emptyBottom = bottomPegs.findIndex(p => p.ropeId === null);
+                let randomBottom = Math.floor(Math.random() * numRopes);
+                let ropeToMoveBottom = ropes[randomBottom];
+                bottomPegs[ropeToMoveBottom.bottomPeg].ropeId = null;
+                ropeToMoveBottom.bottomPeg = emptyBottom;
+                bottomPegs[emptyBottom].ropeId = ropeToMoveBottom.id;
+            }
+
+            draw();
+        }
+
+        // --- Algoritma Cek Tabrakan Tali ---
+        function orientation(p, q, r) {
+            let val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+            if (Math.abs(val) < 0.001) return 0; 
+            return (val > 0) ? 1 : 2;
+        }
+
+        function doIntersect(p1, q1, p2, q2) {
+            let o1 = orientation(p1, q1, p2);
+            let o2 = orientation(p1, q1, q2);
+            let o3 = orientation(p2, q2, p1);
+            let o4 = orientation(p2, q2, q1);
+            if (o1 !== o2 && o3 !== o4) return true;
+            return false;
+        }
+
+        function checkWinCondition() {
+            let hasIntersection = false;
+            let intersectingRopes = new Set();
+
+            // Kumpulkan garis tali saat ini
+            let lines = ropes.map(r => {
+                let p1 = (draggingRope === r && dragEnd === 'top') ? dragPos : topPegs[r.topPeg];
+                let p2 = (draggingRope === r && dragEnd === 'bottom') ? dragPos : bottomPegs[r.bottomPeg];
+                return { id: r.id, p1, p2 };
+            });
+
+            // Cek persilangan
+            for (let i = 0; i < lines.length; i++) {
+                for (let j = i + 1; j < lines.length; j++) {
+                    if (doIntersect(lines[i].p1, lines[i].p2, lines[j].p1, lines[j].p2)) {
+                        hasIntersection = true;
+                        intersectingRopes.add(lines[i].id);
+                        intersectingRopes.add(lines[j].id);
+                    }
+                }
+            }
+            return { hasIntersection, intersectingRopes };
+        }
+
+        // --- Menggambar ke Layar ---
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+
+            // Cek status tabrakan tali
+            const { hasIntersection, intersectingRopes } = checkWinCondition();
+
+            // 1. Gambar Tali
+            ropes.forEach(rope => {
+                let p1 = (draggingRope === rope && dragEnd === 'top') ? dragPos : topPegs[rope.topPeg];
+                let p2 = (draggingRope === rope && dragEnd === 'bottom') ? dragPos : bottomPegs[rope.bottomPeg];
+
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.lineWidth = 18;
+                ctx.lineCap = 'round';
+                
+                // Jika tali bertabrakan, warnanya agak pudar. Jika bebas, warnanya terang benderang!
+                ctx.strokeStyle = intersectingRopes.has(rope.id) ? '#9E9E9E' : rope.color;
+                ctx.stroke();
+
+                // Garis tengah (tekstur tali)
+                ctx.lineWidth = 6;
+                ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+                ctx.stroke();
+            });
+
+            // 2. Gambar Paku Atas dan Bawah
+            const drawPegs = (pegs) => {
+                pegs.forEach(peg => {
+                    ctx.beginPath();
+                    ctx.arc(peg.x, peg.y, pegRadius, 0, 2 * Math.PI);
+                    
+                    if (peg.ropeId !== null) {
+                        // Paku yang berisi tali
+                        ctx.fillStyle = ropes.find(r => r.id === peg.ropeId).color;
+                        ctx.fill();
+                        ctx.lineWidth = 4;
+                        ctx.strokeStyle = '#FFF';
+                        ctx.stroke();
+                    } else {
+                        // Paku kosong (Drop Zone)
+                        ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                        ctx.fill();
+                        ctx.lineWidth = 3;
+                        ctx.setLineDash([5, 5]);
+                        ctx.strokeStyle = '#757575';
+                        ctx.stroke();
+                        ctx.setLineDash([]); // Reset
+                    }
+                });
+            };
+
+            drawPegs(topPegs);
+            drawPegs(bottomPegs);
+
+            // Cek Menang
+            if (!hasIntersection && !isWin && !draggingRope) {
+                isWin = true;
+                setTimeout(() => {
+                    playSound('win');
+                    document.getElementById('winScreen').style.display = 'flex';
+                }, 300);
+            }
+        }
+
+        // --- Interaksi Tarik & Lepas (Drag & Drop) ---
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        function onDown(e) {
+            if (isWin) return;
+            initAudio();
+            const pos = getPos(e);
+            
+            // Cek apakah jari menekan paku atas
+            for (let i = 0; i < topPegs.length; i++) {
+                let peg = topPegs[i];
+                if (peg.ropeId !== null) {
+                    let dx = pos.x - peg.x;
+                    let dy = pos.y - peg.y;
+                    if (dx * dx + dy * dy <= pegRadius * pegRadius) {
+                        draggingRope = ropes.find(r => r.id === peg.ropeId);
+                        dragEnd = 'top';
+                        dragPos = { x: pos.x, y: pos.y };
+                        peg.ropeId = null; // Lepaskan dari paku sementara ditarik
+                        playSound('pickup');
+                        draw();
+                        return;
+                    }
+                }
+            }
+
+            // Cek apakah jari menekan paku bawah
+            for (let i = 0; i < bottomPegs.length; i++) {
+                let peg = bottomPegs[i];
+                if (peg.ropeId !== null) {
+                    let dx = pos.x - peg.x;
+                    let dy = pos.y - peg.y;
+                    if (dx * dx + dy * dy <= pegRadius * pegRadius) {
+                        draggingRope = ropes.find(r => r.id === peg.ropeId);
+                        dragEnd = 'bottom';
+                        dragPos = { x: pos.x, y: pos.y };
+                        peg.ropeId = null;
+                        playSound('pickup');
+                        draw();
+                        return;
+                    }
+                }
+            }
+        }
+
+        function onMove(e) {
+            if (!draggingRope) return;
+            e.preventDefault(); 
+            dragPos = getPos(e);
+            draw();
+        }
+
+        function onUp(e) {
+            if (!draggingRope) return;
+            
+            let dropped = false;
+            let targetPegs = dragEnd === 'top' ? topPegs : bottomPegs;
+
+            // Cek apakah ujung tali dijatuhkan di dekat paku kosong yang sebaris
+            for (let i = 0; i < targetPegs.length; i++) {
+                let peg = targetPegs[i];
+                if (peg.ropeId === null) {
+                    let dx = dragPos.x - peg.x;
+                    let dy = dragPos.y - peg.y;
+                    if (dx * dx + dy * dy <= (pegRadius * 2) * (pegRadius * 2)) {
+                        // Berhasil dipindahkan ke paku baru!
+                        peg.ropeId = draggingRope.id;
+                        if (dragEnd === 'top') draggingRope.topPeg = i;
+                        if (dragEnd === 'bottom') draggingRope.bottomPeg = i;
+                        dropped = true;
+                        playSound('drop');
+                        break;
+                    }
+                }
+            }
+
+            // Jika tidak pas di paku kosong, kembalikan ke paku asalnya
+            if (!dropped) {
+                if (dragEnd === 'top') topPegs[draggingRope.topPeg].ropeId = draggingRope.id;
+                if (dragEnd === 'bottom') bottomPegs[draggingRope.bottomPeg].ropeId = draggingRope.id;
+                playSound('drop');
+            }
+
+            draggingRope = null;
+            draw();
+        }
+
+        canvas.addEventListener('mousedown', onDown);
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+
+        canvas.addEventListener('touchstart', onDown, { passive: false });
+        window.addEventListener('touchmove', onMove, { passive: false });
+        window.addEventListener('touchend', onUp);
+
+        setTimeout(() => {
+            resize();
+            startLevel();
+        }, 100);
+
+    </script>
+</body>
+</html>

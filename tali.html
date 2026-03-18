@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Game Anak: Urai Tali Kusut!</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            touch-action: none; /* Cegah layar bergeser saat main */
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            background-color: #1E88E5; /* Biru cerah seperti di gambar Anda */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .btn-home {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            font-size: 30px;
+            text-decoration: none;
+            background: white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            z-index: 20;
+        }
+
+        h1 {
+            font-size: 22px;
+            color: #FFF;
+            margin-top: 20px;
+            text-shadow: 2px 2px 0px #0D47A1;
+            z-index: 10;
+        }
+
+        .subtitle {
+            color: #FFF9C4;
+            font-size: 14px;
+            margin-bottom: 10px;
+            z-index: 10;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            flex-grow: 1;
+        }
+
+        /* Layar Kemenangan */
+        .win-screen {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(255, 255, 255, 0.95);
+            z-index: 50;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .win-screen h2 {
+            font-size: 36px;
+            color: #4CAF50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .btn-restart {
+            padding: 15px 30px;
+            font-size: 20px;
+            background-color: #FF9800;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="btn-home">🏠</a>
+
+    <h1>Urai Talinya! 🧶</h1>
+    <p class="subtitle">Geser pin agar tidak ada garis merah</p>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div class="win-screen" id="winScreen">
+        <h2>Berhasil Diurai! 🎉</h2>
+        <button class="btn-restart" onclick="startLevel()">Main Lagi 🔄</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        function resize() {
+            width = canvas.clientWidth;
+            height = canvas.clientHeight;
+            canvas.width = width;
+            canvas.height = height;
+            draw();
+        }
+        window.addEventListener('resize', resize);
+
+        // Data Game
+        let nodes = [];
+        let edges = [];
+        let draggingNode = null;
+        let isWin = false;
+        const nodeRadius = 25; // Ukuran pin
+
+        // Audio System
+        let audioCtx;
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function playSound(type) {
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'pop') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'win') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+            }
+        }
+
+        // Algoritma Matematika untuk mendeteksi persilangan garis
+        function orientation(p, q, r) {
+            let val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+            if (Math.abs(val) < 0.001) return 0; // Sejajar
+            return (val > 0) ? 1 : 2; // Searah/Berlawanan jarum jam
+        }
+
+        function doIntersect(p1, q1, p2, q2) {
+            let o1 = orientation(p1, q1, p2);
+            let o2 = orientation(p1, q1, q2);
+            let o3 = orientation(p2, q2, p1);
+            let o4 = orientation(p2, q2, q1);
+            // Garis bersilangan jika orientasinya berbeda
+            if (o1 !== o2 && o3 !== o4) return true;
+            return false;
+        }
+
+        // Membuat level secara acak
+        function startLevel() {
+            document.getElementById('winScreen').style.display = 'none';
+            isWin = false;
+            nodes = [];
+            edges = [];
+
+            // Jumlah pin (semakin banyak semakin sulit)
+            const numNodes = 6; 
+            const padding = 60;
+
+            // 1. Buat bentuk melingkar (Pasti tidak ada yang silang)
+            let tempNodes = [];
+            let centerX = width / 2;
+            let centerY = height / 2;
+            let radius = Math.min(width, height) / 2 - padding;
+
+            for (let i = 0; i < numNodes; i++) {
+                let angle = (i * 2 * Math.PI) / numNodes;
+                tempNodes.push({
+                    x: centerX + radius * Math.cos(angle),
+                    y: centerY + radius * Math.sin(angle),
+                    color: ['#FF5252', '#FFEB3B', '#4CAF50', '#E040FB', '#FF9800', '#00BCD4'][i % 6]
+                });
+            }
+
+            // 2. Acak posisi pin agar talinya jadi kusut!
+            nodes = [...tempNodes].sort(() => Math.random() - 0.5);
+
+            // 3. Hubungkan pin satu sama lain membentuk jaring tertutup
+            for (let i = 0; i < numNodes; i++) {
+                edges.push({ from: i, to: (i + 1) % numNodes });
+            }
+            
+            // Tambahkan 1-2 tali melintang di tengah biar lebih seru
+            edges.push({ from: 0, to: 3 });
+            edges.push({ from: 1, to: 4 });
+
+            draw();
+        }
+
+        function checkWinCondition() {
+            let hasIntersection = false;
+            let intersectingEdges = new Set();
+
+            // Cek setiap pasang tali
+            for (let i = 0; i < edges.length; i++) {
+                for (let j = i + 1; j < edges.length; j++) {
+                    let e1 = edges[i];
+                    let e2 = edges[j];
+
+                    // Jika tali berbagi pin yang sama, lewati (tidak dihitung silang)
+                    if (e1.from === e2.from || e1.from === e2.to || e1.to === e2.from || e1.to === e2.to) continue;
+
+                    let p1 = nodes[e1.from], q1 = nodes[e1.to];
+                    let p2 = nodes[e2.from], q2 = nodes[e2.to];
+
+                    if (doIntersect(p1, q1, p2, q2)) {
+                        hasIntersection = true;
+                        intersectingEdges.add(i);
+                        intersectingEdges.add(j);
+                    }
+                }
+            }
+
+            return { hasIntersection, intersectingEdges };
+        }
+
+        function draw() {
+            if (!ctx) return;
+            ctx.clearRect(0, 0, width, height);
+
+            const { hasIntersection, intersectingEdges } = checkWinCondition();
+
+            // Gambar Tali (Edges)
+            edges.forEach((edge, index) => {
+                let p1 = nodes[edge.from];
+                let p2 = nodes[edge.to];
+                
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.lineWidth = 12;
+                ctx.lineCap = 'round';
+
+                // Tali Merah = Kusut, Tali Hijau Neon = Bebas!
+                if (intersectingEdges.has(index)) {
+                    ctx.strokeStyle = '#FF1744'; // Merah
+                } else {
+                    ctx.strokeStyle = '#76FF03'; // Hijau terang
+                }
+                ctx.stroke();
+
+                // Tambahkan efek kilau di tengah tali
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+                ctx.stroke();
+            });
+
+            // Gambar Pin (Nodes)
+            nodes.forEach(node => {
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI);
+                ctx.fillStyle = node.color;
+                ctx.fill();
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#FFF';
+                ctx.stroke();
+
+                // Kilau di pin
+                ctx.beginPath();
+                ctx.arc(node.x - 6, node.y - 6, nodeRadius / 4, 0, 2 * Math.PI);
+                ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                ctx.fill();
+            });
+
+            // Cek Menang
+            if (!hasIntersection && !isWin && !draggingNode) {
+                isWin = true;
+                setTimeout(() => {
+                    playSound('win');
+                    document.getElementById('winScreen').style.display = 'flex';
+                }, 300);
+            }
+        }
+
+        // --- INTERAKSI MOUSE & TOUCH ---
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        function onDown(e) {
+            if (isWin) return;
+            initAudio();
+            const pos = getPos(e);
+            
+            // Cek apakah jari menekan salah satu pin
+            for (let i = nodes.length - 1; i >= 0; i--) {
+                let node = nodes[i];
+                let dx = pos.x - node.x;
+                let dy = pos.y - node.y;
+                if (dx * dx + dy * dy <= (nodeRadius + 15) * (nodeRadius + 15)) {
+                    draggingNode = node;
+                    playSound('pop');
+                    break;
+                }
+            }
+        }
+
+        function onMove(e) {
+            if (!draggingNode) return;
+            e.preventDefault(); // Cegah scroll layar
+            const pos = getPos(e);
+            
+            // Batasi agar pin tidak ditarik keluar layar
+            draggingNode.x = Math.max(nodeRadius, Math.min(width - nodeRadius, pos.x));
+            draggingNode.y = Math.max(nodeRadius, Math.min(height - nodeRadius, pos.y));
+            draw();
+        }
+
+        function onUp() {
+            if (draggingNode) {
+                draggingNode = null;
+                draw(); // Cek kondisi menang saat jari dilepas
+            }
+        }
+
+        // Event Listeners
+        canvas.addEventListener('mousedown', onDown);
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+
+        canvas.addEventListener('touchstart', onDown, { passive: false });
+        window.addEventListener('touchmove', onMove, { passive: false });
+        window.addEventListener('touchend', onUp);
+
+        // Inisialisasi awal
+        setTimeout(() => {
+            resize();
+            startLevel();
+        }, 100);
+
+    </script>
+</body>
+</html>
