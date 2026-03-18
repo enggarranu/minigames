@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Game Anak: Puzzle Mobil!</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            touch-action: none; /* SANGAT PENTING: Mencegah layar tergeser saat anak menarik mobil */
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            background-color: #E0F7FA; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .btn-home {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            font-size: 30px;
+            text-decoration: none;
+            background: white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            z-index: 20;
+        }
+
+        h1 {
+            font-size: 24px;
+            color: #FF9800;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            text-shadow: 1px 1px 0px #FFF;
+            z-index: 10;
+        }
+
+        /* Area Jalan Raya (Tempat Bayangan) */
+        .road-container {
+            background-color: #757575; /* Warna aspal */
+            width: 90%;
+            max-width: 400px;
+            border-radius: 20px;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            border: 4px dashed #FFEB3B; /* Garis jalan */
+            margin-bottom: 40px;
+        }
+
+        /* Kotak Bayangan */
+        .shadow-box {
+            height: 80px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 50px;
+            /* Trik ajaib mengubah emoji jadi bayangan hitam pekat */
+            filter: brightness(0) opacity(0.5); 
+        }
+
+        /* Area Mobil yang bisa ditarik */
+        .cars-container {
+            width: 90%;
+            max-width: 400px;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .car {
+            font-size: 50px;
+            width: 70px;
+            height: 70px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+            cursor: grab;
+            position: relative;
+            z-index: 15;
+            transition: transform 0.1s;
+        }
+
+        .car:active {
+            cursor: grabbing;
+            transform: scale(1.1);
+        }
+
+        /* Animasi Kemenangan */
+        .win-screen {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(255, 255, 255, 0.9);
+            z-index: 50;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.5s forwards;
+        }
+
+        .win-screen h2 {
+            font-size: 36px;
+            color: #4CAF50;
+            margin-bottom: 20px;
+        }
+
+        .btn-restart {
+            padding: 15px 30px;
+            font-size: 20px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="btn-home">🏠</a>
+
+    <h1>Pasangkan Mobilnya! 🚓</h1>
+
+    <div class="road-container" id="shadows">
+        </div>
+
+    <div class="cars-container" id="cars">
+        </div>
+
+    <div class="win-screen" id="winScreen">
+        <h2>Pintar Sekali! 🎉</h2>
+        <button class="btn-restart" onclick="startGame()">Main Lagi 🔄</button>
+    </div>
+
+    <script>
+        // Data Mobil
+        const vehicles = [
+            { id: 'v1', emoji: '🚓' }, // Polisi
+            { id: 'v2', emoji: '🚑' }, // Ambulans
+            { id: 'v3', emoji: '🚒' }, // Pemadam
+            { id: 'v4', emoji: '🚕' }  // Taksi
+        ];
+
+        let matchedCount = 0;
+
+        // Audio System
+        let audioCtx;
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function playSound(type) {
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'match') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+            }
+        }
+
+        function startGame() {
+            matchedCount = 0;
+            document.getElementById('winScreen').style.display = 'none';
+            
+            const shadowContainer = document.getElementById('shadows');
+            const carContainer = document.getElementById('cars');
+            shadowContainer.innerHTML = '';
+            carContainer.innerHTML = '';
+
+            // Acak urutan mobil dan bayangan agar tidak selalu sama
+            const shuffledShadows = [...vehicles].sort(() => Math.random() - 0.5);
+            const shuffledCars = [...vehicles].sort(() => Math.random() - 0.5);
+
+            // Buat Bayangan
+            shuffledShadows.forEach(v => {
+                const shadow = document.createElement('div');
+                shadow.classList.add('shadow-box');
+                shadow.dataset.id = v.id;
+                shadow.innerText = v.emoji;
+                shadowContainer.appendChild(shadow);
+            });
+
+            // Buat Mobil
+            shuffledCars.forEach(v => {
+                const car = document.createElement('div');
+                car.classList.add('car');
+                car.dataset.id = v.id;
+                car.innerText = v.emoji;
+                setupDrag(car); // Tambahkan fungsi drag
+                carContainer.appendChild(car);
+            });
+        }
+
+        // Fungsi Drag & Drop untuk layar sentuh (HP)
+        function setupDrag(el) {
+            let startX = 0, startY = 0, currentX = 0, currentY = 0;
+            let isDragging = false;
+
+            // Saat jari menyentuh layar
+            el.addEventListener('touchstart', (e) => {
+                isDragging = true;
+                initAudio();
+                const touch = e.touches[0];
+                startX = touch.clientX - currentX;
+                startY = touch.clientY - currentY;
+                el.style.zIndex = "100"; // Taruh di depan
+                el.style.transition = "none"; // Matikan animasi saat digeser biar mulus
+            });
+
+            // Saat jari menggeser mobil
+            el.addEventListener('touchmove', (e) => {
+                if (!isDragging) return;
+                e.preventDefault(); // Mencegah layar ikut scroll
+                const touch = e.touches[0];
+                currentX = touch.clientX - startX;
+                currentY = touch.clientY - startY;
+                el.style.transform = `translate(${currentX}px, ${currentY}px) scale(1.1)`;
+            });
+
+            // Saat jari dilepas
+            el.addEventListener('touchend', (e) => {
+                if (!isDragging) return;
+                isDragging = false;
+                el.style.zIndex = "15";
+                el.style.transition = "transform 0.3s ease"; // Nyalakan lagi animasinya
+
+                // Cek apakah jatuh di bayangan yang tepat
+                checkMatch(el);
+            });
+        }
+
+        function checkMatch(car) {
+            const carId = car.dataset.id;
+            const targetShadow = document.querySelector(`.shadow-box[data-id='${carId}']`);
+            
+            // Dapatkan posisi koordinat kotak mobil dan kotak bayangan
+            const carRect = car.getBoundingClientRect();
+            const shadowRect = targetShadow.getBoundingClientRect();
+
+            // Logika Tabrakan (Cek apakah kotak mobil berada di atas kotak bayangan)
+            const isOverlapping = !(
+                carRect.right < shadowRect.left || 
+                carRect.left > shadowRect.right || 
+                carRect.bottom < shadowRect.top || 
+                carRect.top > shadowRect.bottom
+            );
+
+            if (isOverlapping) {
+                // Cocok!
+                playSound('match');
+                // Pindahkan mobil ke dalam kotak jalanan
+                car.style.transform = "translate(0px, 0px)";
+                car.style.position = "absolute";
+                car.style.left = `${shadowRect.left}px`;
+                car.style.top = `${shadowRect.top}px`;
+                
+                // Matikan fungsi drag agar tidak bisa digeser lagi
+                car.style.pointerEvents = "none";
+                car.style.boxShadow = "none";
+                
+                matchedCount++;
+                if (matchedCount === vehicles.length) {
+                    setTimeout(() => {
+                        document.getElementById('winScreen').style.display = 'flex';
+                    }, 500);
+                }
+            } else {
+                // Salah! Kembalikan mobil ke tempat semula
+                playSound('wrong');
+                car.style.transform = "translate(0px, 0px)";
+            }
+        }
+
+        // Mulai game saat layar terbuka
+        startGame();
+    </script>
+</body>
+</html>

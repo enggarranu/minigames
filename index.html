@@ -8,15 +8,15 @@
         /* Desain Dasar */
         * {
             box-sizing: border-box;
-            touch-action: manipulation; /* Mencegah zoom di HP */
+            touch-action: manipulation; 
             margin: 0;
             padding: 0;
-            text-decoration: none; /* Menghilangkan garis bawah pada link */
+            text-decoration: none; 
         }
 
         body {
             font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
-            background-color: #FFF9C4; /* Kuning pastel yang ceria */
+            background-color: #FFF9C4; 
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -26,8 +26,8 @@
 
         /* Header / Judul Aplikasi */
         .header {
-            margin-top: 30px;
-            margin-bottom: 30px;
+            margin-top: 20px;
+            margin-bottom: 25px;
             text-align: center;
             animation: bounceIn 1s ease-out;
         }
@@ -40,73 +40,70 @@
         }
 
         p.subtitle {
-            font-size: 18px;
+            font-size: 16px;
             color: #FF9800;
             font-weight: bold;
         }
 
-        /* Wadah Menu Game */
+        /* --- PERUBAHAN: Wadah Menu Game (GRID 2 KOLOM) --- */
         .menu-container {
-            display: flex;
-            flex-direction: column;
-            gap: 20px; /* Jarak antar tombol game */
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); /* Membagi menjadi 2 kolom sama besar */
+            gap: 15px; /* Jarak antar kotak */
             width: 100%;
-            max-width: 400px; /* Maksimal lebar untuk tampilan HP */
+            max-width: 450px; 
         }
 
-        /* Desain Kartu / Tombol Game */
+        /* --- PERUBAHAN: Desain Kartu menjadi Kotak --- */
         .game-card {
             display: flex;
+            flex-direction: column; /* Ikon di atas, teks di bawah */
             align-items: center;
+            justify-content: center;
+            text-align: center;
             background-color: white;
-            border-radius: 25px;
-            padding: 20px;
-            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+            border-radius: 20px;
+            padding: 20px 10px;
+            box-shadow: 0 6px 10px rgba(0,0,0,0.1);
             border: 4px solid;
             transition: transform 0.2s, box-shadow 0.2s;
             cursor: pointer;
         }
 
-        /* Warna border untuk masing-masing game */
         .card-match { border-color: #4CAF50; }
         .card-balloon { border-color: #2196F3; }
         .card-piano { border-color: #E91E63; }
+        .card-draw { border-color: #FFC107; }
+        .card-peek { border-color: #81C784; }
+        .card-catch { border-color: #FF9800; }
 
-        /* Efek saat kartu ditekan */
         .game-card:active {
-            transform: translateY(5px) scale(0.98);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transform: translateY(4px) scale(0.95);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
-        /* Ikon Game di dalam Kartu */
         .game-icon {
-            font-size: 50px;
-            margin-right: 20px;
+            font-size: 45px;
+            margin-bottom: 10px;
             background-color: #F5F5F5;
-            min-width: 80px;
-            height: 80px;
+            width: 70px;
+            height: 70px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 20px;
-        }
-
-        /* Teks di dalam Kartu */
-        .game-info {
-            display: flex;
-            flex-direction: column;
+            border-radius: 18px;
         }
 
         .game-title {
-            font-size: 22px;
+            font-size: 16px;
             font-weight: bold;
             color: #333;
-            margin-bottom: 5px;
+            line-height: 1.2;
         }
 
+        /* Deskripsi disembunyikan agar tampilan 2 kolom lebih bersih */
         .game-desc {
-            font-size: 14px;
-            color: #777;
+            display: none; 
         }
 
         /* Animasi Muncul */
@@ -116,31 +113,35 @@
             100% { transform: scale(1); }
         }
 
-        /* Animasi masuk untuk kartu secara bergantian */
-        .card-1 { animation: slideUp 0.6s ease-out 0.2s backwards; }
-        .card-2 { animation: slideUp 0.6s ease-out 0.4s backwards; }
-        .card-3 { animation: slideUp 0.6s ease-out 0.6s backwards; }
+        /* Animasi masuk kartu berurutan */
+        .card-1 { animation: slideUp 0.5s ease-out 0.1s backwards; }
+        .card-2 { animation: slideUp 0.5s ease-out 0.2s backwards; }
+        .card-3 { animation: slideUp 0.5s ease-out 0.3s backwards; }
+        .card-4 { animation: slideUp 0.5s ease-out 0.4s backwards; }
+        .card-5 { animation: slideUp 0.5s ease-out 0.5s backwards; }
+        .card-6 { animation: slideUp 0.5s ease-out 0.6s backwards; }
 
         @keyframes slideUp {
-            0% { transform: translateY(50px); opacity: 0; }
+            0% { transform: translateY(30px); opacity: 0; }
             100% { transform: translateY(0); opacity: 1; }
         }
 
         /* --- FITUR DONASI / SALIN REKENING --- */
         .btn-donate-trigger {
-            margin-top: 40px;
+            margin-top: 30px;
             background-color: #FF9800;
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 20px;
+            padding: 12px 25px;
+            border-radius: 25px;
             font-size: 14px;
             font-weight: bold;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             cursor: pointer;
+            width: 100%;
+            max-width: 450px;
         }
 
-        /* Desain Popup (Modal) */
         .modal-overlay {
             display: none; 
             position: fixed;
@@ -149,7 +150,7 @@
             z-index: 100;
             justify-content: center;
             align-items: center;
-            overflow-y: auto; /* Memungkinkan *scroll* di dalam *popup* jika layar kecil */
+            overflow-y: auto; 
         }
 
         .modal-content {
@@ -160,46 +161,32 @@
             width: 85%;
             max-width: 320px;
             border: 4px solid #FF9800;
-            position: relative;
         }
 
-        .modal-content h3 {
-            color: #333;
-            margin-bottom: 10px;
-        }
+        .modal-content h3 { color: #333; margin-bottom: 10px; }
+        .modal-content p { font-size: 14px; color: #666; margin-bottom: 15px; }
 
-        .modal-content p {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 15px;
-        }
-
-        /* PERUBAHAN: Desain Gambar QRIS */
         .qris-image {
-            max-width: 200px; /* Atur ukuran agar pas */
-            width: 100%;
-            height: auto;
-            margin: 15px 0;
+            max-width: 200px; 
+            width: 100%; height: auto;
+            margin: 15px auto;
             border: 2px solid #ccc;
             border-radius: 10px;
-            display: block; /* Agar di tengah */
-            margin-left: auto;
-            margin-right: auto;
+            display: block; 
         }
 
         .rek-box {
             background-color: #F5F5F5;
-            padding: 15px;
+            padding: 12px;
             border-radius: 10px;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
             letter-spacing: 2px;
             color: #2196F3;
             margin-bottom: 15px;
         }
 
-        .btn-copy {
-            background-color: #4CAF50;
+        .btn-copy, .btn-close {
             color: white;
             border: none;
             padding: 12px 20px;
@@ -211,18 +198,9 @@
             margin-bottom: 10px;
         }
 
-        .btn-close {
-            background-color: #E0E0E0;
-            color: #333;
-            border: none;
-            padding: 10px;
-            border-radius: 10px;
-            width: 100%;
-            font-weight: bold;
-            cursor: pointer;
-        }
+        .btn-copy { background-color: #4CAF50; }
+        .btn-close { background-color: #E0E0E0; color: #333; }
 
-        /* Notifikasi Sukses */
         .toast {
             display: none;
             position: fixed;
@@ -247,68 +225,53 @@
         
         <a href="cocokkangamabar.html" class="game-card card-match card-1">
             <div class="game-icon">🐶</div>
-            <div class="game-info">
-                <div class="game-title">Cocokkan!</div>
-                <div class="game-desc">Cari gambar dan huruf yang sama. Melatih ingatan!</div>
-            </div>
+            <div class="game-title">Cocokkan!</div>
         </a>
 
         <a href="balon.html" class="game-card card-balloon card-2">
             <div class="game-icon">🎈</div>
-            <div class="game-info">
-                <div class="game-title">Pecahkan Balon</div>
-                <div class="game-desc">Tangkap balon warna-warni yang terbang. Awas terlewat!</div>
-            </div>
+            <div class="game-title">Pecahkan Balon</div>
         </a>
 
         <a href="piano.html" class="game-card card-piano card-3">
             <div class="game-icon">🎹</div>
-            <div class="game-info">
-                <div class="game-title">Piano Ajaib</div>
-                <div class="game-desc">Tekan warna-warninya dan dengarkan nada musik yang ceria!</div>
-            </div>
+            <div class="game-title">Piano Ajaib</div>
         </a>
 
-        <a href="gambar.html" class="game-card card-4" style="border-color: #FFC107; animation: slideUp 0.6s ease-out 0.8s backwards;">
+        <a href="gambar.html" class="game-card card-draw card-4">
             <div class="game-icon">🎨</div>
-            <div class="game-info">
-                <div class="game-title">Papan Gambar</div>
-                <div class="game-desc">Coret-coret dan menggambar bebas dengan warna-warni!</div>
-            </div>
+            <div class="game-title">Papan Gambar</div>
         </a>
 
-        <a href="cilukba.html" class="game-card card-5" style="border-color: #81C784; animation: slideUp 0.6s ease-out 1s backwards;">
+        <a href="cilukba.html" class="game-card card-peek card-5">
             <div class="game-icon">🐰</div>
-            <div class="game-info">
-                <div class="game-title">Cilukba Hewan!</div>
-                <div class="game-desc">Cepat sentuh hewannya sebelum mereka bersembunyi lagi!</div>
-            </div>
+            <div class="game-title">Cilukba Hewan!</div>
         </a>
 
-        <a href="tangkap.html" class="game-card card-6" style="border-color: #FF9800; animation: slideUp 0.6s ease-out 1.2s backwards;">
+        <a href="tangkap.html" class="game-card card-catch card-6">
             <div class="game-icon">🧺</div>
-            <div class="game-info">
-                <div class="game-title">Tangkap Buah!</div>
-                <div class="game-desc">Geser keranjang untuk menangkap buah. Awas ada ulat nakal!</div>
-            </div>
+            <div class="game-title">Tangkap Buah!</div>
         </a>
 
-        </div>
+        <a href="puzzle.html" class="game-card" style="border-color: #9C27B0; animation: slideUp 0.5s ease-out 0.7s backwards;">
+            <div class="game-icon">🚓</div>
+            <div class="game-title">Puzzle Mobil</div>
+        </a>
+
+    </div>
 
     <button class="btn-donate-trigger" onclick="openModal()">☕ Dukung Pembuat Game</button>
 
     <div class="modal-overlay" id="donationModal">
         <div class="modal-content">
             <h3>Dukung Kami 💖</h3>
-            <p>Hai Ayah/Bunda! Terima kasih sudah menemani anak-anak bermain. Dukungan kecil Anda sangat berarti bagi kami untuk terus membuat game edukasi yang bermanfaat. </p>
+            <p>Hai Ayah/Bunda! Terima kasih sudah menemani anak-anak bermain.</p>
             
             <p style="font-size:14px; font-weight:bold; color: #333; margin-bottom: 5px;">Silakan scan QRIS di bawah ini:</p>
-            
             <img src="image_1.jpeg" alt="QRIS Code" class="qris-image">
 
-            <p style="font-size:12px; margin-top:-10px; margin-bottom:15px; font-weight:bold;">Atau Transfer ke:</p>
-
-            <p style="font-size:12px; margin-top:-10px; margin-bottom:15px; font-weight:bold;">Bank BCA a.n. Enggar Ranu Hariawan</p>
+            <p style="font-size:12px; margin-top:-10px; margin-bottom:5px; font-weight:bold;">Atau Transfer ke:</p>
+            <p style="font-size:12px; margin-bottom:10px; font-weight:bold;">Bank BCA a.n. Enggar Ranu Hariawan</p>
 
             <div class="rek-box" id="teksRekening">8415080022</div> 
             
@@ -320,21 +283,11 @@
     <div class="toast" id="toastMsg">✅ Berhasil disalin!</div>
 
     <script>
-        // Fungsi untuk membuka popup
-        function openModal() {
-            document.getElementById('donationModal').style.display = 'flex';
-        }
-
-        // Fungsi untuk menutup popup
-        function closeModal() {
-            document.getElementById('donationModal').style.display = 'none';
-        }
-
-        // Fungsi untuk menyalin teks ke clipboard HP
+        function openModal() { document.getElementById('donationModal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('donationModal').style.display = 'none'; }
+        
         function copyRekening() {
             const teks = document.getElementById('teksRekening').innerText;
-            
-            // Cara klasik yang paling stabil untuk Webview Mobile
             const tempInput = document.createElement("input");
             tempInput.value = teks;
             document.body.appendChild(tempInput);
@@ -342,12 +295,11 @@
             document.execCommand("copy");
             document.body.removeChild(tempInput);
 
-            // Tampilkan notifikasi
             const toast = document.getElementById('toastMsg');
             toast.style.display = 'block';
             setTimeout(() => {
                 toast.style.display = 'none';
-                closeModal(); // Otomatis tutup popup setelah menyalin
+                closeModal();
             }, 2000);
         }
     </script>
